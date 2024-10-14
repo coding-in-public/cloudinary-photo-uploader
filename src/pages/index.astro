@@ -1,9 +1,16 @@
 ---
 // assets
 import halloween from "@/assets/halloween.svg";
+import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
 
 // styles
 import "@/styles/global.css";
+
+import { CldUploadWidget, CldImage } from "astro-cloudinary";
+import { getCollection } from "astro:content";
+
+const halloweenPics = await getCollection("halloweenPics");
 ---
 
 <html lang="en">
@@ -26,9 +33,63 @@ import "@/styles/global.css";
       <img
         src={halloween.src}
         alt=""
-        class="absolute top-0 right-0 h-1/2 pointer-events-none"
+        class="absolute top-0 right-0 h-1/2 pointer-events-none -z-10"
       />
       <!-- image credit https://pixabay.com/vectors/spider-web-spider-web-halloween-1777668/ -->
     </header>
+    <div class="grid gap-2" aria-label="Upload pictures section">
+      <CldUploadWidget
+        id="upload-events"
+        uploadPreset="ml_default"
+        signatureEndpoint="/api/sign-cloudinary-params"
+        options={{
+          folder: "halloween", // will create if its not there
+          resourceType: "image",
+          maxImageFileSize: 2500000, // 2.4mb
+        }}
+      >
+        <Button>Upload</Button>
+      </CldUploadWidget>
+    </div>
+    <section aria-label="Halloween pictures" class="grid gap-2">
+      <h2 class="text-3xl font-bold">Best Halloween Images</h2>
+      <div class="grid sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+        {
+          halloweenPics.map(({ data }) => {
+            return (
+              <Card>
+                <CldImage
+                  src={data.public_id}
+                  width={300}
+                  height={300}
+                  crop={{
+                    type: "auto",
+                    source: true,
+                  }}
+                  alt=""
+                  sizes="100vw"
+                />
+              </Card>
+            );
+          })
+        }
+      </div>
+    </section>
+    <script>
+      const widget = document.querySelector("#upload-events");
+
+      if (widget) {
+        widget.addEventListener("clduploadwidget:success", ((
+          e: CustomEvent<{ detail: object }>
+        ) => {
+          window.location.reload();
+          // {
+          //  event: '<Event>',
+          //  info: '<Cloudinary Resource>',
+          //  UploadWidget // Widget Instance,
+          // }
+        }) as EventListener);
+      }
+    </script>
   </body>
 </html>
